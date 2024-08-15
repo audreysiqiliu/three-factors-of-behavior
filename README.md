@@ -241,4 +241,5 @@ For any questions or issues regarding this project, please contact:
 
 ### License
 
-This project is licensed under [Your License Here].
+The MIT License (MIT)
+Copyright (c) 2024 Audrey Siqi-Liu
