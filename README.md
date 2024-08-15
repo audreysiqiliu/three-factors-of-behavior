@@ -65,7 +65,7 @@ final_prereg_script/
 ### 3. `3_analysis_specific_filtering.py`
 
 **Purpose**:
-- This script performs filtering and feature engineering specific to the IVs of interest for the LME. Data set reduced in size from Days 1-5 to Days 1-2, performance metrics are taken from Day 2, then to the final dataset with Day 1 hit trials only.
+- This script performs filtering and feature engineering specific to the IVs of interest for the LME. Dataset is reduced from Days 1-5 to Days 1-2, performance metrics are taken from Day 2, merged with Day 1. The final dataset contains Day 1 hit trials only.
 
 **Input**:
 - **`df_HNL_1-5_recent_occurrence.csv`**: The dataset containing recent occurrence variables, produced by the previous script.
@@ -119,7 +119,7 @@ final_prereg_script/
 ### 4a. `4a_raw-factor_models.py`
 
 **Purpose**:
-- This script fits a linear mixed-effects model (LME) with all trialsSince IVs as categorical along with several reduced models and compares them using likelihood ratio tests (LRT) and Bayesian Information Criterion (BIC).
+- This script fits the raw-factors linear mixed-effects model (LME) with all trialsSince variables as categorical variables along with reduced models. Full and reduced models are compared using likelihood ratio tests (LRT) to quantify the importance of variables omitted in the reduced models.
 
 **Input**:
 - **`df_HNL1_hits_final_cleaned_for_LME.csv`**: The cleaned and filtered dataset produced in the previous steps, ready for modeling.
@@ -161,7 +161,7 @@ final_prereg_script/
 ### 4b. `4b_binary-factor_models.py`
 
 **Purpose**:
-- This script fits a binary factor linear mixed-effects model (LME) to assess the interaction effects of binary split variables on response times (`RT`). It also fits and compares several reduced models to evaluate the contribution of each factor and their interactions.
+- This script fits the binary factor linear mixed-effects model (LME) to assess the main and interaction effects of binary split variables on response times (`RT`). Also performs LRTs to quantify variable importance.
 
 **Input**:
 - **`df_HNL_1_ByDay_omnibus_lme_cleaned.csv`**: The cleaned and filtered dataset produced in the previous steps, used for binary factor modeling.
