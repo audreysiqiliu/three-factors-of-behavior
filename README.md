@@ -55,7 +55,7 @@ final_prereg_script/
    - Tracks cumulative occurrences of `Illegal1Color` as both legal and illegal colors.
 
 3. **Copy Last Trial Results**:
-   - For each occurrence of `Illegal1Name`, `target_present`, `TypeId`, and color match, this script copies the last trial's result and number of illegal items.
+   - For each occurrence of `Illegal1Name`, `target_present`, `TypeId`, and color match, this script copies the trial result of the last occurrence.
 
 **Output**:
 - **`df_HNL_1-5_recent_occurrence.csv`**: The dataset with additional columns related to recent occurrences, cumulative counts, and color match flags, ready for further analysis.
@@ -73,7 +73,7 @@ final_prereg_script/
 **Steps**:
 
 1. **Load Initial Data**:
-   - The script starts by loading the dataset and logging the initial number of trials and users.
+   - Load dataset and log the initial number of trials and users.
 
 2. **Filter for Days 1 and 2**:
    - The dataset is filtered to include only trials from Days 1 and 2.
@@ -87,14 +87,14 @@ final_prereg_script/
 5. **Subset Data for Day 1 and Day 2**:
    - The dataset is split into Day 1 and Day 2 subsets for individual metrics calculations.
 
-6. **Calculate Performance Metrics for Day 2 Target-Present Trials**:
-   - Metrics such as average target-present accuracy, average hit RT, and log-transformed RT are calculated for Day 2 target-present trials.
+6. **Calculate Individual Performance Metrics using Day 2 Target-Present Trials**:
+   - Metrics such as average target-present accuracy and hit RT.
 
-7. **Calculate Target-Specific Performance Metrics**:
-   - Target-specific metrics (e.g., hit rate, average RT, and log-transformed RT) are calculated and pivoted for each target (Illegal1Name).
+7. **Calculate Target-Specific Day 2 Performance Metrics**:
+   - Target-specific metrics (e.g., hit rate, average RT) are calculated and pivoted for each target (Illegal1Name).
 
 8. **Merge Metrics with Day 1 Data**:
-   - The calculated metrics are merged back with the Day 1 data to produce a comprehensive dataset.
+   - The calculated metrics are merged back with the Day 1 data to produce a comprehensive dataset. `avg hit RT` is used as the primary individual difference measure.
 
 9. **Further Filters**:
    - **Remove Multiple Target Trials**: Trials with multiple targets are removed.
@@ -103,26 +103,27 @@ final_prereg_script/
    - **Filter Out Small Set Sizes**: Trials with small set sizes (`LegalItems` <= 4) are removed.
 
 10. **Feature Engineering**:
-    - **Cumulative Target Exposure Probability**: Calculates the probability of cumulative target exposure.
-    - **Create Binary Split Variables**: Binary variables are created based on median hit RT, previous target ID match, previous target condition match, set size category, and trial number.
+    - **Cumulative Target Exposure Probability**: Calculates the cumulative target exposure as a proportion of current trial number.
+    - **Create Binary Split Variables**: Binary variables are created based on median `avg hit RT`, previous target ID match, previous target condition match, set size category, and trial number.
 
 11. **Filter for Hit Trials**:
     - The dataset is filtered to include only hit trials (`TrialResult == 'Hit'`).
 
 12. **Final Clean-Up**:
-    - Rows with missing values in key columns (Independent Variables for both LMEs) are removed, and the final cleaned dataset is prepared for model analysis.
+    - Rows with missing values in key columns (independent variables for subsequent LMEs) are removed, and the final cleaned dataset is prepared for model analysis.
 
 **Output**:
 - **`df_HNL1_all_final.csv`**: An intermediate dataset saved before filtering for hit trials and NA removal.
 - **`df_HNL1_hits_final_cleaned_for_LME.csv`**: The final cleaned dataset, filtered for hit trials, ready for LME (Linear Mixed Effects) modeling.
+- **`filtering_log_{datetime.now().strftime("%Y%m%d_%H%M%S")}.txt`**: log of # trials and users removed through filtering.
 
 ### 4a. `4a_raw-factor_models.py`
 
 **Purpose**:
-- This script fits the raw-factors linear mixed-effects model (LME) with all trialsSince variables as categorical variables along with reduced models. Full and reduced models are compared using likelihood ratio tests (LRT) to quantify the importance of variables omitted in the reduced models.
+- This script fits the raw-factors linear mixed-effects models (LME). Full and reduced models are compared using likelihood ratio tests (LRT) to quantify the importance of the variables omitted in the reduced models.
 
 **Input**:
-- **`df_HNL1_hits_final_cleaned_for_LME.csv`**: The cleaned and filtered dataset produced in the previous steps, ready for modeling.
+- **`df_HNL1_hits_final_cleaned_for_LME.csv`**: The cleaned and filtered dataset produced in the previous steps.
 
 **Steps**:
 
@@ -161,15 +162,14 @@ final_prereg_script/
 ### 4b. `4b_binary-factor_models.py`
 
 **Purpose**:
-- This script fits the binary factor linear mixed-effects model (LME) to assess the main and interaction effects of binary split variables on response times (`RT`). Also performs LRTs to quantify variable importance.
+- This script fits the binary-factor LME to assess the main and interaction effects of binary-split variables on response times (`RT`). Also performs LRTs to quantify variable importance.
 
 **Input**:
-- **`df_HNL_1_ByDay_omnibus_lme_cleaned.csv`**: The cleaned and filtered dataset produced in the previous steps, used for binary factor modeling.
+- **`df_HNL_1_ByDay_omnibus_lme_cleaned.csv`**: The cleaned and filtered dataset produced in the previous steps.
 
 **Steps**:
 
-1. **Load Data**:
-   - The script loads the dataset, focusing on binary split variables for modeling.
+1. **Load Data**
 
 2. **Fit the Full Binary Factor Model**:
    - A full mixed-effects model is fitted with interaction terms between `avg_hit_RT_Category`, `PreviousTargetCondMatch`, `Difficulty_Category`, and `Plane`.
@@ -195,33 +195,26 @@ final_prereg_script/
 
 ### Dependencies
 
-- **Python 3.x** with the following libraries:
+- **Python 3** with the following libraries:
   - `numpy`
   - `pandas`
   - `logging`
   - `datetime`
   - `statsmodels`
   - `scipy`
-- **Miniconda3**: Recommended for managing the Python environment.
+  - `pickle`
 
 ### Data Inputs and Outputs
 
 - **Input Files**:
-  - `df_HNL_1-5_recent_occurrence.csv`: Primary dataset used in the scripts.
-  - `target_difficulty_omnibus_lme.csv`: Additional dataset for importing target difficulty scores calculated from 5% sandbox.
-
-- **Output Files**:
-### Data Inputs and Outputs
-
-- **Input Files**:
-  - `df_HNL_1-5_recent_occurrence.csv`: Primary dataset used in the scripts.
+  - `wColor_Honolulu_sandboxId_1-5.csv`: Raw dataset with legal/illegal item names and colors.
   - `target_difficulty_omnibus_lme.csv`: Additional dataset for importing target difficulty scores calculated from 5% sandbox.
 
 - **Output Files**:
   - `df_HNL_1-5.csv`: Cleaned and preprocessed dataset from `1_general_data_prep.py`.
   - `df_HNL_1-5_recent_occurrence.csv`: Dataset with added recent occurrence variables from `2_add_recent_occurrence_vars.py`.
-  - `df_HNL1_all_final.csv`: Intermediate dataset saved before filtering for hit trials and NA removal from `3_analysis_specific_filtering.py`.
-  - `df_HNL1_hits_final_cleaned_for_LME.csv`: Final cleaned dataset, filtered for hit trials, ready for LME modeling from `3_analysis_specific_filtering.py`.
+  - `df_HNL1_all_final.csv`: Intermediate dataset saved before filtering for hit trials and removing NAs, from `3_analysis_specific_filtering.py`.
+  - `df_HNL1_hits_final_cleaned_for_LME.csv`: Final cleaned dataset ready for LME modeling from `3_analysis_specific_filtering.py`.
   - `omnibus_full_model_summary.txt`: Model summaries from raw factor models (`4a_raw-factor_models.py`).
   - `omnibus_full_model.pkl`: Pickle file storing the full LME model from `4a_raw-factor_models.py`.
   - `omnibus_full_model_results.pkl`: Pickle file storing the results of the full LME model from `4a_raw-factor_models.py`.
@@ -234,7 +227,7 @@ final_prereg_script/
 
 ### Contact Information
 
-For any questions or issues regarding this project, please contact:
+For any questions regarding this project, please contact:
 
 - **Name:** Audrey Liu
 - **Email:** audrey.liu@gwu.edu
