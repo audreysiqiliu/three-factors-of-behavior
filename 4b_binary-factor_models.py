@@ -29,7 +29,7 @@ def likelihood_ratio_test(full_model, reduced_model):
 data_path = os.getenv('DATA_PATH', './data')
 output_path = os.getenv('OUTPUT_PATH', './output')
 
-df_cleaned_simple = pd.read_csv(f'{output_path}/df_HNL_1_ByDay_omnibus_lme_cleaned.csv', low_memory=False)
+df_cleaned_simple = pd.read_csv(f'{output_path}/df_HNL1_hits_final_cleaned_for_LME.csv', low_memory=False)
 
 # Define the log file path
 log_path = f'{output_path}/omnibus_lme_median_split_lrt_log.txt'
