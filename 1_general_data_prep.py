@@ -85,6 +85,7 @@ def calculate_statistics(df):
 
 # Main preprocessing workflow
 def preprocess_data(df):
+    df = df[df['Replay'] == 0].copy()      # Filter out replays
     categorize_target_condition(df)        # Categorize target condition
     assign_trial_numbers(df)               # Assign trial numbers to each trial for each user
     categorize_trial_results(df)           # Categorize trials into hits, false alarms, etc.

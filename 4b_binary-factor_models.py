@@ -39,14 +39,15 @@ original_stdout = sys.stdout  # Save a reference to the original standard output
 with open(log_path, 'w') as log_file:
     sys.stdout = log_file  # Change the standard output to the log file
 
-    # Full model
-    full_formula = 'RT ~ avg_hit_RT_Category * PreviousTargetCondMatch * Difficulty_Category * C(Plane) + (1|UserId)'
-    full_model = smf.mixedlm(full_formula, df_cleaned_simple, groups=df_cleaned_simple['UserId']).fit()
+    try:
+        # Full model
+        full_formula = 'RT ~ avg_hit_RT_Category * PreviousTargetCondMatch * Difficulty_Category * C(Plane) + (1|UserId)'
+        full_model = smf.mixedlm(full_formula, df_cleaned_simple, groups=df_cleaned_simple['UserId']).fit()
+        print(full_model.summary())
+    except Exception as e:
+        print(f"Error fitting full model: {str(e)}")
 
-    # Print the full model summary
-    print(full_model.summary())
-
-    # Define the reduced formulas and fit models
+    # Define the reduced formulas
     reduced_formulas = {
         "Without Interactions": 'RT ~ avg_hit_RT_Category + PreviousTargetCondMatch + Difficulty_Category + C(Plane) + (1|UserId)',
         "Without avg_hit_RT_Category": 'RT ~ PreviousTargetCondMatch*Difficulty_Category*C(Plane) + (1|UserId)',
@@ -55,21 +56,24 @@ with open(log_path, 'w') as log_file:
         "Without C(Plane)": 'RT ~ avg_hit_RT_Category*PreviousTargetCondMatch*Difficulty_Category + (1|UserId)',
     }
 
-    # Number of observations
-    n = len(df_cleaned_simple)
-
     # Fit and save reduced models, compare with full model
     for name, formula in reduced_formulas.items():
-        reduced_model = smf.mixedlm(formula, df_cleaned_simple, groups=df_cleaned_simple['UserId']).fit()
-        lr_stat, p_value = likelihood_ratio_test(full_model, reduced_model)
-        bic = calculate_bic(reduced_model)
-        print(f"\n{name}:")
-        print("Likelihood Ratio Statistic:", lr_stat)
-        print("P-Value:", p_value)
-        print("BIC:", bic)
+        try:
+            reduced_model = smf.mixedlm(formula, df_cleaned_simple, groups=df_cleaned_simple['UserId']).fit()
+            lr_stat, p_value = likelihood_ratio_test(full_model, reduced_model)
+            bic = calculate_bic(reduced_model)
+            print(f"\n{name}:")
+            print("Likelihood Ratio Statistic:", lr_stat)
+            print("P-Value:", p_value)
+            print("BIC:", bic)
+        except Exception as e:
+            print(f"Error fitting or comparing model '{name}': {str(e)}")
 
-    # Save outputs
-    save_model_outputs(full_model, f'{output_path}/omnibus_binary_model_summary.txt', f'{output_path}/mitroffgrp/Audrey/output/omnibus_binary_model.pkl', f'{output_path}/omnibus_binary_model_results.pkl')
+    try:
+        # Save outputs
+        save_model_outputs(full_model, f'{output_path}/omnibus_binary_model_summary.txt', f'{output_path}/omnibus_binary_model.pkl', f'{output_path}/omnibus_binary_model_results.pkl')
+    except Exception as e:
+        print(f"Error saving model outputs: {str(e)}")
 
 # Reset stdout to its original setting
 sys.stdout = original_stdout

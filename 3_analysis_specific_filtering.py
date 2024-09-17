@@ -32,12 +32,21 @@ filtered_trial_count = len(df_day_filtered)
 filtered_user_count = df_day_filtered['UserId'].nunique()
 log_and_print(f"After filtering for Days 1 and 2: {filtered_trial_count} trials from {filtered_user_count} unique users.")
 
-# 2. Remove users with more than 60 trials across days 1 and 2
+# Step 2: Remove users with more than 60 trials across days 1 and 2
 user_trial_counts = df_day_filtered.groupby('UserId').size()
 users_to_keep = user_trial_counts[user_trial_counts == 60].index
+# Identify users who have any trial number greater than 60
+users_with_large_trial_numbers = df_day_filtered[df_day_filtered['TrialNumber'] > 60]['UserId'].unique()
+# Keep only users with exactly 60 trials and no trial numbers greater than 60
+users_to_keep = users_to_keep.difference(users_with_large_trial_numbers)
+
 df_user_trial_filtered = df_day_filtered[df_day_filtered['UserId'].isin(users_to_keep)].copy()
+
+# Calculate number of removed users
 removed_users = initial_user_count - df_user_trial_filtered['UserId'].nunique()
-log_and_print(f"Removed {removed_users} users with more than 60 trials.")
+
+log_and_print(f"Removed {removed_users} users with more than 60 trials or trial numbers greater than 60.")
+
 
 # 3. Filter based on allowed upgrades
 allowed_bitmask = 8 | 16 | 2048
