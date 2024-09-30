@@ -26,6 +26,8 @@ final_prereg_script/
 - `wColor_Honolulu_sandboxId_1-5.csv`: Raw 5% Sandbox data airport scanner honolulu (HNL) Days 1-5
 
 **Cleaning Steps**:
+- **Filter out Replays**: flag for trials played more than once
+- **Filter users by trial counts**: Filter out users without exactly 24 trials in Day 1 and 36 trials in Day2
 - **Categorize Target Condition**: Categorizes trials as `target_present` or `target_absent`.
 - **Assign Trial Numbers**: Assigns a sequential trial number to each user’s trials.
 - **Categorize Trial Results**: Categorizes trials as `Hit`, `False Alarm`, `Correct Rejection`, or `Miss`.
@@ -78,38 +80,35 @@ final_prereg_script/
 2. **Filter for Days 1 and 2**:
    - The dataset is filtered to include only trials from Days 1 and 2.
 
-3. **Users with Incorrect Number of Trials**:
-   - Only keep users with exactly 60 trials across Days 1 and 2.
-
-4. **Filter Based on Allowed Upgrades**:
+3. **Filter Based on Allowed Upgrades**:
    - Users with disallowed upgrades, identified using a bitmask, are filtered out.
 
-5. **Subset Data for Day 1 and Day 2**:
+4. **Subset Data for Day 1 and Day 2**:
    - The dataset is split into Day 1 and Day 2 subsets for individual metrics calculations.
 
-6. **Calculate Individual Performance Metrics using Day 2 Target-Present Trials**:
+5. **Calculate Individual Performance Metrics using Day 2 Target-Present Trials**:
    - Metrics such as average target-present accuracy and hit RT.
 
-7. **Calculate Target-Specific Day 2 Performance Metrics**:
+6. **Calculate Target-Specific Day 2 Performance Metrics**:
    - Target-specific metrics (e.g., hit rate, average RT) are calculated and pivoted for each target (Illegal1Name).
 
-8. **Merge Metrics with Day 1 Data**:
+7. **Merge Metrics with Day 1 Data**:
    - The calculated metrics are merged back with the Day 1 data to produce a comprehensive dataset. `avg hit RT` is used as the primary individual difference measure.
 
-9. **Further Filters**:
+8. **Further Filters**:
    - **Remove Multiple Target Trials**: Trials with multiple targets are removed.
    - **Filter for Common Bag Types**: The dataset is filtered to include only trials with common bag types (`TypeId` 1-4).
    - **Identify and Retain Common Targets**: The script identifies and retains the top 10 most frequent targets common across all bag types.
    - **Filter Out Small Set Sizes**: Trials with small set sizes (`LegalItems` <= 4) are removed.
 
-10. **Feature Engineering**:
+9. **Feature Engineering**:
     - **Cumulative Target Exposure Probability**: Calculates the cumulative target exposure as a proportion of current trial number.
     - **Create Binary Split Variables**: Binary variables are created based on median `avg hit RT`, previous target ID match, previous target condition match, set size category, and trial number.
 
-11. **Filter for Hit Trials**:
+10. **Filter for Hit Trials**:
     - The dataset is filtered to include only hit trials (`TrialResult == 'Hit'`).
 
-12. **Final Clean-Up**:
+11. **Final Clean-Up**:
     - Rows with missing values in key columns (independent variables for subsequent LMEs) are removed, and the final cleaned dataset is prepared for model analysis.
 
 **Output**:
