@@ -14,24 +14,18 @@ def assign_trial_numbers(df):
 def categorize_trial_results(df):
     """
     Categorizes each trial based on performance into hits, false alarms, correct rejections, and misses.
-    - trials with hits + false alarms are false alarms
-    - trials with false alarms + misses are false alarms
-    - note: false alarm trials can either be target present or absent
     """
-    # Condition definitions
     condition_hit = (df['IllegalItems'] > 0) & (df['IllegalItemsMarked'] == df['IllegalItems'])
     condition_false_alarm = (df['UniqueTaps'] > df['IllegalItems'])
     condition_correct_rejection = ((df['IllegalItems'] == 0) | df['IllegalItems'].isna()) & ((df['LegalItemsMarked'] == 0) | df['LegalItemsMarked'].isna())
     condition_miss = (df['IllegalItems'] > 0) & (df['IllegalItemsMarked'] < df['IllegalItems'])
 
-    # Default category set to incorrect, though this should be overwritten by specific conditions
     df['TrialResult'] = 'Incorrect'
 
-    # Assigning categories based on conditions
     df.loc[condition_hit, 'TrialResult'] = 'Hit'
     df.loc[condition_correct_rejection, 'TrialResult'] = 'Correct Rejection'
     df.loc[condition_miss, 'TrialResult'] = 'Miss'
-    df.loc[condition_false_alarm, 'TrialResult'] = 'False Alarm'  # Evaluate false alarm last to ensure it catches any excess taps
+    df.loc[condition_false_alarm, 'TrialResult'] = 'False Alarm'
 
 def calculate_response_times(df):
     """ Calculates and cleans up the response times based on trial results. """
@@ -53,16 +47,11 @@ def calculate_response_times(df):
 
 def filter_out_invalid_rt(df):
     """ Filters out invalid response times by row and User IDs associated with RT values that indicate faulty RT recording. """
-    # Identify user IDs with invalid RTs marked as 0 or 1
     user_ids_with_invalid_rt = df[df['RT'].isin([0, 1])]['UserId'].unique()
     
-    # Drop rows for users with these invalid RTs
     df.drop(df[df['UserId'].isin(user_ids_with_invalid_rt)].index, inplace=True)
-    
-    # Set RTs outside of a realistic range (less than 250ms or more than 10000ms) to NaN
     df.loc[(df['RT'] <= 250) | (df['RT'] > 10000), 'RT'] = np.nan
     
-    # Print the count of unique users with invalid RTs for logging
     print(f"Number of users with invalid RTs: {len(user_ids_with_invalid_rt)}")
 
 def log_response_times(df):
@@ -83,15 +72,35 @@ def calculate_statistics(df):
     print(f"Total number of unique users: {total_users}")
     print(f"Total number of Hits {num_hits}; Correct Rejections {num_correct_rejections}\nOverall accuracy rate {accuracy_rate}\n")
 
+def filter_users_by_trial_counts(df):
+    """ Filters out users without exactly 24 trials on Day 1 and 36 trials on Day 2. """
+    # Calculate trial counts for each user on Day 1 and Day 2
+    user_day1_trial_counts = df[df['Day'] == 1].groupby('UserId').size()
+    user_day2_trial_counts = df[df['Day'] == 2].groupby('UserId').size()
+
+    # Keep only users with exactly 24 trials on Day 1 and 36 trials on Day 2
+    users_to_keep = user_day1_trial_counts[user_day1_trial_counts == 24].index.intersection(
+                    user_day2_trial_counts[user_day2_trial_counts == 36].index)
+
+    # Filter dataframe to include only these users
+    df_filtered = df[df['UserId'].isin(users_to_keep)].copy()
+    
+    # Log the number of removed users
+    removed_users = df['UserId'].nunique() - df_filtered['UserId'].nunique()
+    print(f"Removed {removed_users} users without exactly 24 trials on Day 1 or 36 trials on Day 2.")
+
+    return df_filtered
+
 # Main preprocessing workflow
 def preprocess_data(df):
-    df = df[df['Replay'] == 0].copy()      # Filter out replays
-    categorize_target_condition(df)        # Categorize target condition
-    assign_trial_numbers(df)               # Assign trial numbers to each trial for each user
-    categorize_trial_results(df)           # Categorize trials into hits, false alarms, etc.
-    calculate_response_times(df)           # Calculate and clean response times
-    log_response_times(df)                 # Apply logarithmic transformation to response times
-    calculate_statistics(df)               # Calculate and print various statistics
+    df = df[df['Replay'] == 0].copy()  # Filter out replays
+    df = filter_users_by_trial_counts(df)  # Filter users by trial counts
+    categorize_target_condition(df)  # Categorize target condition
+    assign_trial_numbers(df)  # Assign trial numbers to each trial for each user
+    categorize_trial_results(df)  # Categorize trials into hits, false alarms, etc.
+    calculate_response_times(df)  # Calculate and clean response times
+    log_response_times(df)  # Apply logarithmic transformation to response times
+    calculate_statistics(df)  # Calculate and print various statistics
 
 # Load paths
 data_path = os.getenv('DATA_PATH', './data')

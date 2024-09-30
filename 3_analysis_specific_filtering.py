@@ -32,31 +32,15 @@ filtered_trial_count = len(df_day_filtered)
 filtered_user_count = df_day_filtered['UserId'].nunique()
 log_and_print(f"After filtering for Days 1 and 2: {filtered_trial_count} trials from {filtered_user_count} unique users.")
 
-# Step 2: Remove users with more than 60 trials across days 1 and 2
-user_trial_counts = df_day_filtered.groupby('UserId').size()
-users_to_keep = user_trial_counts[user_trial_counts == 60].index
-# Identify users who have any trial number greater than 60
-users_with_large_trial_numbers = df_day_filtered[df_day_filtered['TrialNumber'] > 60]['UserId'].unique()
-# Keep only users with exactly 60 trials and no trial numbers greater than 60
-users_to_keep = users_to_keep.difference(users_with_large_trial_numbers)
-
-df_user_trial_filtered = df_day_filtered[df_day_filtered['UserId'].isin(users_to_keep)].copy()
-
-# Calculate number of removed users
-removed_users = initial_user_count - df_user_trial_filtered['UserId'].nunique()
-
-log_and_print(f"Removed {removed_users} users with more than 60 trials or trial numbers greater than 60.")
-
-
-# 3. Filter based on allowed upgrades
+# 2. Filter based on allowed upgrades
 allowed_bitmask = 8 | 16 | 2048
 
 def is_allowed_upgrade(value):
     return (value & ~allowed_bitmask) == 0
 
-df_user_trial_filtered['AllowedUpgrade'] = df_user_trial_filtered['ActiveUpgradesId'].apply(is_allowed_upgrade)
-disallowed_user_ids = df_user_trial_filtered[~df_user_trial_filtered['AllowedUpgrade']]['UserId'].unique()
-df_upgrade_filtered = df_user_trial_filtered[~df_user_trial_filtered['UserId'].isin(disallowed_user_ids)].copy()
+df_day_filtered['AllowedUpgrade'] = df_day_filtered['ActiveUpgradesId'].apply(is_allowed_upgrade)
+disallowed_user_ids = df_day_filtered[~df_day_filtered['AllowedUpgrade']]['UserId'].unique()
+df_upgrade_filtered = df_day_filtered[~df_day_filtered['UserId'].isin(disallowed_user_ids)].copy()
 removed_users_upgrade = len(disallowed_user_ids)
 log_and_print(f"Removed {removed_users_upgrade} users due to disallowed upgrades.")
 
@@ -66,11 +50,11 @@ current_trial_count = len(df_filtered)
 current_user_count = df_filtered['UserId'].nunique()
 log_and_print(f"After all initial filters: {current_trial_count} trials from {current_user_count} unique users.")
 
-# 4. Subset day 1 and 2 for individual metrics calculations
+# 3. Subset day 1 and 2 for individual metrics calculations
 df_day1 = df_filtered[df_filtered['Day'] == 1].copy()
 df_day2 = df_filtered[df_filtered['Day'] == 2].copy()
 
-# 5. Calculate performance metrics for Day 2 target present trials
+# 4. Calculate performance metrics for Day 2 target present trials
 df_day2_tp = df_day2[df_day2['IllegalItems'] > 0].copy()
 metrics_overall = df_day2_tp.groupby('UserId').agg(
     avg_target_present_accuracy=('TrialResult', lambda x: (x == 'Hit').mean()),
@@ -83,7 +67,7 @@ nan_rt_users = metrics_overall['UserId'][metrics_overall['avg_hit_RT'].isna()].t
 num_nan_rt_users = len(nan_rt_users)
 log_and_print(f"Found {num_nan_rt_users} users with NaN avg_hit_RT.")
 
-# 6. Calculate target-specific performance metrics
+# 5. Calculate target-specific performance metrics
 metrics_target = df_day2_tp.groupby(['UserId', 'Illegal1Name']).agg(
     target_id_accuracy=('TrialResult', lambda x: (x == 'Hit').mean()),
     target_id_hit_RT=('RT', 'mean'),
@@ -99,15 +83,15 @@ metrics_target_pivot = metrics_target.pivot_table(
 metrics_target_pivot.columns = [f"{col[1]}-{col[0]}" for col in metrics_target_pivot.columns]
 metrics_target_pivot.reset_index(inplace=True)
 
-# 7. Combine overall and target-specific metrics
+# 6. Combine overall and target-specific metrics
 individual_metrics = metrics_overall.merge(metrics_target_pivot, on='UserId', how='left')
 individual_metrics.to_csv('/lustre/CCAS/mitroffgrp/Audrey/output/individual_metrics.csv', index=False)
 log_and_print("Saved individual metrics to 'individual_metrics.csv'.")
 
-# 8. Merge individual metrics with Day 1 data
+# 7. Merge individual metrics with Day 1 data
 df_day1_metrics = df_day1.merge(individual_metrics, on='UserId', how='left')
 
-# 9. Further Filters
+# 8. Further Filters
 
 # a. Remove multiple target trials
 df_single_target = df_day1_metrics[df_day1_metrics['IllegalItems'] == 1].copy()
@@ -137,7 +121,7 @@ log_and_print(f"After filtering for common targets: {len(df_final_targets)} tria
 df_large_sets = df_final_targets[df_final_targets['LegalItems'] > 4].copy()
 log_and_print(f"After filtering out small set sizes: {len(df_large_sets)} trials remain.")
 
-# 10. Feature Engineering
+# 9. Feature Engineering
 
 # a. Calculate cumulative target exposure probability
 df_large_sets['Cumulative_Illegal1Name_ByDay_Prob'] = df_large_sets['Cumulative_Illegal1Name_ByDay'] / df_large_sets['TrialNumber']
@@ -160,14 +144,14 @@ df_feature_engineered = df_large_sets.merge(
     how='left'
 )
 
-# 11. Filter out any trials that are not "Hit"
+# 10. Filter out any trials that are not "Hit"
 df_hits_only = df_feature_engineered[df_feature_engineered['TrialResult'] == 'Hit'].copy()
 removed_non_hit_trials = len(df_feature_engineered) - len(df_hits_only)
 remaining_users_after_hit_filter = df_hits_only['UserId'].nunique()
 
 log_and_print(f"Removed {removed_non_hit_trials} non-hit trials. Remaining dataset contains {len(df_hits_only)} hit trials from {remaining_users_after_hit_filter} unique subjects.")
 
-# 12. Final Clean-Up: Remove rows with missing values in key columns
+# 11. Final Clean-Up: Remove rows with missing values in key columns
 columns_to_check = [
     'avg_hit_RT_Category', 'PreviousTargetIdMatch', 'PreviousTargetCondMatch', 
     'SetSize_Category', 'Difficulty_Category', 'Plane', 'UserId', 'RT',
@@ -190,6 +174,6 @@ log_and_print(f"Final dataset contains {len(df_final_cleaned)} trials from {fina
 df_feature_engineered.to_csv(f'{output_path}/df_HNL1_all_final.csv', index=False)
 log_and_print("Saved intermediate DataFrame, before hit-filtering and NA removal, to 'df_HNL1_all_final.csv'.")
 df_final_cleaned.to_csv(f'{output_path}/df_HNL1_hits_final_cleaned_for_LME.csv', index=False)
-log_and_print("Saved final cleaned DataFrame to 'df_HNL1_hits_final_cleaned_for_LME.csv.csv'.")
+log_and_print("Saved final cleaned DataFrame to 'df_HNL1_hits_final_cleaned_for_LME.csv'.")
 
 # End of Script
