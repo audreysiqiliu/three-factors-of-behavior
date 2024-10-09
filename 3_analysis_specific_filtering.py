@@ -32,7 +32,7 @@ filtered_trial_count = len(df_day_filtered)
 filtered_user_count = df_day_filtered['UserId'].nunique()
 log_and_print(f"After filtering for Days 1 and 2: {filtered_trial_count} trials from {filtered_user_count} unique users.")
 
-# 2. Filter based on allowed upgrades
+# 2a. Filter based on allowed upgrades
 allowed_bitmask = 8 | 16 | 2048
 
 def is_allowed_upgrade(value):
@@ -49,6 +49,17 @@ df_filtered = df_upgrade_filtered.drop(columns=['AllowedUpgrade'])
 current_trial_count = len(df_filtered)
 current_user_count = df_filtered['UserId'].nunique()
 log_and_print(f"After all initial filters: {current_trial_count} trials from {current_user_count} unique users.")
+
+# 2b. Filter out UserIds with any TrialsSinceLast_Illegal1Name_ByDay or TrialsSinceLast_target_present_ByDay greater than 23
+user_ids_to_exclude = df_filtered[df_filtered['TrialsSinceLast_Illegal1Name_ByDay'] > 23]['UserId'].unique()
+user_ids_to_exclude = user_ids_to_exclude.union(df_filtered[df_filtered['TrialsSinceLast_target_present_ByDay'] > 23]['UserId'].unique())
+excluded_user_count_step_2b = len(user_ids_to_exclude)
+
+# Filter out excluded UserIds and update df_filtered
+df_filtered = df_filtered[~df_filtered['UserId'].isin(user_ids_to_exclude)].copy()
+current_trial_count = len(df_filtered)
+current_user_count = df_filtered['UserId'].nunique()
+log_and_print(f"After filtering based on TrialsSince thresholds: Excluded {excluded_user_count_step_2b} users, resulting in {current_trial_count} trials from {current_user_count} unique users.")
 
 # 3. Subset day 1 and 2 for individual metrics calculations
 df_day1 = df_filtered[df_filtered['Day'] == 1].copy()
