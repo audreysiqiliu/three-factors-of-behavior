@@ -12,13 +12,13 @@ final_prereg_script/
 │   ├── Combined_LegalId_Name_Color.csv   # Legal Item info
 │   ├── ASDB_data_fix.py                  # Ensures all rows in data have the same number of columns
 │   ├── compile_data                      # Use if concatenating multiple raw data files
-│   └── add_color.py                      # Script to add item names and color to main dataframe
+│   ├── add_color.py                      # Script to add item names and color to main dataframe
+│   └── raw-factor-lme.R                  # R code for summary LME significance
 ├── 1_general_data_prep.py            # Initial data preprocessing
 ├── 2_add_recent_occurrence_vars.py   # Add recent occurrence variables
 ├── 3_analysis_specific_filtering.py  # Apply analysis-specific filtering
 ├── 4a_raw-factor_models.py           # Fit and analyze raw factor models
 ├── 4b_binary-factor_models.py        # Fit and analyze binary factor models
-├── raw-factor-lme.R                  # R code for summary LME significance
 └── run_all_scripts.sh                # (not included) SLURM job script to run all scripts sequentially
 ```
 
