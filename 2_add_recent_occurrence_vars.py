@@ -80,17 +80,23 @@ def copy_last_trial_result(df, iv_name):
 data_path = os.getenv('DATA_PATH', './data')
 output_path = os.getenv('OUTPUT_PATH', './output')
 
-df = pd.read_csv(f'{output_path}/df_HNL_1-5.csv', low_memory=False)
+file_path = f"{output_path}/df_HNL_1-2.csv"
+df = pd.read_csv(file_path, low_memory=False)
+print(f"In step 2, reading file: {file_path}")
+
 
 legal_color_columns = [col for col in df.columns if 'Legal' in col and 'Color' in col]
 illegal_color_columns = [col for col in df.columns if 'Illegal' in col and 'Color' in col]
 
-for iv_name in ['Illegal1Name', 'target_present', 'TypeId']:
+for iv_name in ['Illegal1Name', 'target_present', 'Type']:
     calculate_trials_since_by_day(df, iv_name, 'Day')
 
 calculate_color_match_details(df, illegal_color_columns, legal_color_columns, 'Day')
 
-for iv_name in ['Illegal1Name', 'target_present', 'TypeId','ColorMatch']:
+for iv_name in ['Illegal1Name', 'target_present', 'Type','ColorMatch']:
     copy_last_trial_result(df, iv_name)
 
-df.to_csv(f'{output_path}/df_HNL_1-5_recent_occurrence.csv', index=False)
+df.to_csv(f'{output_path}/df_HNL_1-2_recent_occurrence.csv', index=False)
+
+# save dummy file to see if it is file saving or a problem with the analysis object
+# add more print statements in general

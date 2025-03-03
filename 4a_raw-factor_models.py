@@ -49,6 +49,13 @@ continuous_ivs = ['avg_hit_RT','Cumulative_Illegal1Name_ByDay_Prob','Cumulative_
 grouping_var = 'UserId'
 dv = 'RT'
 
+# Order Illegal1Name based on Difficulty_Score
+difficulty_order = df_cleaned.groupby("Illegal1Name")["Difficulty_Score"].first().sort_values().index.tolist()
+df_cleaned["Illegal1Name"] = pd.Categorical(df_cleaned["Illegal1Name"], categories=difficulty_order, ordered=True)
+print("Target (Illegal1Name) difficulty order:", difficulty_order)
+# Define the reference level (the Illegal1Name with the lowest Difficulty_Score, i.e., PISTOL)
+reference_level = difficulty_order[0]
+
 # Redirect print output to a log file
 log_path = f'{output_path}/omnibus_lme_model_analysis_log.txt'
 with open(log_path, 'w') as log_file:
@@ -56,7 +63,7 @@ with open(log_path, 'w') as log_file:
 
     try:
         # Full model
-        full_formula = 'RT ~ C(TrialNumber)+C(TrialsSinceLast_Illegal1Name_ByDay)+C(TrialsSinceLast_target_present_ByDay)+C(LegalItems)+C(Illegal1Name) + avg_hit_RT+Cumulative_Illegal1Name_ByDay_Prob+Cumulative_target_present_ByDay_Prob + (1|UserId)'
+        full_formula = f'RT ~ C(TrialNumber)+C(TrialsSinceLast_Illegal1Name_ByDay)+C(TrialsSinceLast_target_present_ByDay)+C(LegalItems)+C(Illegal1Name, Treatment(reference="{reference_level}")) + avg_hit_RT+Cumulative_Illegal1Name_ByDay_Prob+Cumulative_target_present_ByDay_Prob + (1|UserId)'
         full_model = smf.mixedlm(full_formula, df_cleaned, groups=df_cleaned['UserId']).fit()
 
         # Save the full model output
@@ -65,7 +72,7 @@ with open(log_path, 'w') as log_file:
         # Save the trial-by-trial fitted values and residuals
         df_cleaned['Fitted_Values'] = full_model.fittedvalues
         df_cleaned['Residuals'] = full_model.resid
-        df_cleaned[['UserId', 'TrialNumber', 'RT', 'Fitted_Values', 'Residuals']].to_csv(f'{output_path}/df_HNL1_3factors_LME_fitted_values_residuals.csv', index=False)
+        df_cleaned.to_csv(f'{output_path}/df_HNL1_3factors_LME_fitted_values_residuals.csv', index=False)
         print("Saved fitted values and residuals to 'df_HNL1_3factors_LME_fitted_values_residuals.csv'.")
 
         # Reduced models

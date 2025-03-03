@@ -19,7 +19,11 @@ def log_and_print(message):
     logging.info(message)
 
 # Load initial data
-df = pd.read_csv(f'{output_path}/df_HNL_1-5_recent_occurrence.csv', low_memory=False)
+file_path = f'{output_path}/df_HNL_1-2_recent_occurrence.csv'
+
+df = pd.read_csv(file_path, low_memory=False)
+print(f"In step 3, reading file: {file_path}")
+
 initial_trial_count = len(df)
 initial_user_count = df['UserId'].nunique()
 log_and_print(f"Initial data loaded: {initial_trial_count} trials from {initial_user_count} unique users.")
@@ -38,7 +42,7 @@ allowed_bitmask = 8 | 16 | 2048
 def is_allowed_upgrade(value):
     return (value & ~allowed_bitmask) == 0
 
-df_day_filtered['AllowedUpgrade'] = df_day_filtered['ActiveUpgradesId'].apply(is_allowed_upgrade)
+df_day_filtered['AllowedUpgrade'] = df_day_filtered['ActiveUpgrades'].apply(is_allowed_upgrade)
 disallowed_user_ids = df_day_filtered[~df_day_filtered['AllowedUpgrade']]['UserId'].unique()
 df_upgrade_filtered = df_day_filtered[~df_day_filtered['UserId'].isin(disallowed_user_ids)].copy()
 removed_users_upgrade = len(disallowed_user_ids)
@@ -51,8 +55,11 @@ current_user_count = df_filtered['UserId'].nunique()
 log_and_print(f"After all initial filters: {current_trial_count} trials from {current_user_count} unique users.")
 
 # 2b. Filter out UserIds with any TrialsSinceLast_Illegal1Name_ByDay or TrialsSinceLast_target_present_ByDay greater than 23
-user_ids_to_exclude = df_filtered[df_filtered['TrialsSinceLast_Illegal1Name_ByDay'] > 23]['UserId'].unique()
-user_ids_to_exclude = user_ids_to_exclude.union(df_filtered[df_filtered['TrialsSinceLast_target_present_ByDay'] > 23]['UserId'].unique())
+# Initialize user_ids_to_exclude as a set with initial IDs to exclude
+user_ids_to_exclude = set(df_filtered[df_filtered['TrialsSinceLast_Illegal1Name_ByDay'] > 23]['UserId'].unique())
+# Use union to add more IDs to the set
+user_ids_to_exclude = user_ids_to_exclude.union(set(df_filtered[df_filtered['TrialsSinceLast_target_present_ByDay'] > 23]['UserId'].unique()))
+# Get the count of excluded users
 excluded_user_count_step_2b = len(user_ids_to_exclude)
 
 # Filter out excluded UserIds and update df_filtered
@@ -96,7 +103,7 @@ metrics_target_pivot.reset_index(inplace=True)
 
 # 6. Combine overall and target-specific metrics
 individual_metrics = metrics_overall.merge(metrics_target_pivot, on='UserId', how='left')
-individual_metrics.to_csv('/lustre/CCAS/mitroffgrp/Audrey/output/individual_metrics.csv', index=False)
+individual_metrics.to_csv(f'{output_path}/individual_metrics.csv', index=False)
 log_and_print("Saved individual metrics to 'individual_metrics.csv'.")
 
 # 7. Merge individual metrics with Day 1 data
@@ -108,20 +115,22 @@ df_day1_metrics = df_day1.merge(individual_metrics, on='UserId', how='left')
 df_single_target = df_day1_metrics[df_day1_metrics['IllegalItems'] == 1].copy()
 log_and_print(f"After removing multiple target trials: {len(df_single_target)} trials remain.")
 
-# b. Filter for common bag types (TypeId 1-4)
-df_common_bags = df_single_target[df_single_target['TypeId'].isin([1, 2, 3, 4])].copy()
+# b. Filter for common bag types (Type 1-4)
+df_common_bags = df_single_target[df_single_target['Type'].isin([1, 2, 3, 4])].copy()
 log_and_print(f"After filtering for common bag types: {len(df_common_bags)} trials remain.")
 
-# c. Identify top 10 most frequent targets in common bag types
-top_targets = df_common_bags['Illegal1Name'].value_counts().head(10).index.tolist()
+# # c. Identify top 10 most frequent targets in common bag types
+# top_targets = df_common_bags['Illegal1Name'].value_counts().head(10).index.tolist()
 
-# d. Find targets common across all bag types
-targets_per_bag = {
-    bag_type: set(df_common_bags[df_common_bags['TypeId'] == bag_type]['Illegal1Name'].unique())
-    for bag_type in [1, 2, 3, 4]
-}
-common_targets = set.intersection(*targets_per_bag.values())
-final_targets = list(set(top_targets).intersection(common_targets))
+# # d. Find targets common across all bag types
+# targets_per_bag = {
+#     bag_type: set(df_common_bags[df_common_bags['Type'] == bag_type]['Illegal1Name'].unique())
+#     for bag_type in [1, 2, 3, 4]
+# }
+# common_targets = set.intersection(*targets_per_bag.values())
+# final_targets = list(set(top_targets).intersection(common_targets))
+
+final_targets = ['PISTOL','GASOLINE_CAN','HAMMER','ICE_SKATE','CROSSBOW','LARGE_WATER','DRUGS','BRASS_KNUCKLES']
 log_and_print(f"Identified {len(final_targets)} common targets across all bag types.")
 
 # e. Filter DataFrame to include only these common targets

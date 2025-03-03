@@ -7,12 +7,19 @@ Comparing the relative impact of individual differences, prior experience, and s
 
 ```plaintext
 final_prereg_script/
-├── 1_general_data_prep.py           # Initial data preprocessing
-├── 2_add_recent_occurrence_vars.py  # Add recent occurrence variables
-├── 3_analysis_specific_filtering.py # Apply analysis-specific filtering
-├── 4a_raw-factor_models.py          # Fit and analyze raw factor models
-├── 4b_binary-factor_models.py       # Fit and analyze binary factor models
-└── run_all_scripts.sh               # SLURM job script to run all scripts sequentially
+├── misc/                             
+│   ├── Combined_IllegalId_Name_Color.csv # Illegal Item info used by add_color.py
+│   ├── Combined_LegalId_Name_Color.csv   # Legal Item info
+│   ├── ASDB_data_fix.py                  # Ensures all rows in data have the same number of columns
+│   ├── compile_data                      # Use if concatenating multiple raw data files
+│   └── add_color.py                      # Script to add item names and color to main dataframe
+├── 1_general_data_prep.py            # Initial data preprocessing
+├── 2_add_recent_occurrence_vars.py   # Add recent occurrence variables
+├── 3_analysis_specific_filtering.py  # Apply analysis-specific filtering
+├── 4a_raw-factor_models.py           # Fit and analyze raw factor models
+├── 4b_binary-factor_models.py        # Fit and analyze binary factor models
+└── run_all_scripts.sh                # (not included) SLURM job script to run all scripts sequentially
+
 ```
 
 ## Script Descriptions
@@ -23,7 +30,7 @@ final_prereg_script/
 - Performs initial preprocessing of the dataset.
 
 **Input**:
-- `wColor_Honolulu_sandboxId_1-5.csv`: Raw 5% Sandbox data airport scanner honolulu (HNL) Days 1-5
+- `file/path/in/run_all_scripts/wColor_Honolulu_sandboxId_1-2.csv`: Raw 5% Sandbox data airport scanner honolulu (HNL) Days 1-5
 
 **Cleaning Steps**:
 - **Filter out Replays**: flag for trials played more than once
@@ -35,7 +42,7 @@ final_prereg_script/
 - **Filter Invalid RTs**: Filters out invalid/nonexistent RT values and removes users with invalid RTs.
 
 **Output**:
-- `df_HNL_1-5.csv`: The cleaned and preprocessed dataset.
+- `df_HNL_1-2.csv`: The cleaned and preprocessed dataset.
 
 ---
 ### 2. `2_add_recent_occurrence_vars.py`
@@ -44,7 +51,7 @@ final_prereg_script/
 - This script adds variables related to recent occurrences of specific events, such as the number of trials since certain items or colors were last seen. It also tracks cumulative occurrences and flags for color matches within trials.
 
 **Input**:
-- **`df_HNL_1-5.csv`**: The cleaned and preprocessed dataset from the first script, which contains categorized trials and response times.
+- **`df_HNL_1-2.csv`**: The cleaned and preprocessed dataset from the first script, which contains categorized trials and response times.
 
 **Steps**:
 1. **Calculate Trials Since Last Occurrence**:
@@ -60,7 +67,7 @@ final_prereg_script/
    - For each occurrence of `Illegal1Name`, `target_present`, `TypeId`, and color match, this script copies the trial result of the last occurrence.
 
 **Output**:
-- **`df_HNL_1-5_recent_occurrence.csv`**: The dataset with additional columns related to recent occurrences, cumulative counts, and color match flags, ready for further analysis.
+- **`df_HNL_1-2_recent_occurrence.csv`**: The dataset with additional columns related to recent occurrences, cumulative counts, and color match flags, ready for further analysis.
 
 ---
 
@@ -70,7 +77,7 @@ final_prereg_script/
 - This script performs filtering and feature engineering specific to the IVs of interest for the LME. Dataset is reduced from Days 1-5 to Days 1-2, performance metrics are taken from Day 2, merged with Day 1. The final dataset contains Day 1 hit trials only.
 
 **Input**:
-- **`df_HNL_1-5_recent_occurrence.csv`**: The dataset containing recent occurrence variables, produced by the previous script.
+- **`df_HNL_1-2_recent_occurrence.csv`**: The dataset containing recent occurrence variables, produced by the previous script.
 
 **Steps**:
 
@@ -98,7 +105,7 @@ final_prereg_script/
 8. **Further Filters**:
    - **Remove Multiple Target Trials**: Trials with multiple targets are removed.
    - **Filter for Common Bag Types**: The dataset is filtered to include only trials with common bag types (`TypeId` 1-4).
-   - **Identify and Retain Common Targets**: The script identifies and retains the top 10 most frequent targets common across all bag types.
+   - **Identify and Retain Common Targets**: The script identifies and retains the top 8 most frequent targets common across all bag types.
    - **Filter Out Small Set Sizes**: Trials with small set sizes (`LegalItems` <= 4) are removed.
 
 9. **Feature Engineering**:
@@ -210,8 +217,8 @@ final_prereg_script/
   - `target_difficulty_omnibus_lme.csv`: Additional dataset for importing target difficulty scores calculated from 5% sandbox.
 
 - **Output Files**:
-  - `df_HNL_1-5.csv`: Cleaned and preprocessed dataset from `1_general_data_prep.py`.
-  - `df_HNL_1-5_recent_occurrence.csv`: Dataset with added recent occurrence variables from `2_add_recent_occurrence_vars.py`.
+  - `df_HNL_1-2.csv`: Cleaned and preprocessed dataset from `1_general_data_prep.py`.
+  - `df_HNL_1-2_recent_occurrence.csv`: Dataset with added recent occurrence variables from `2_add_recent_occurrence_vars.py`.
   - `df_HNL1_all_final.csv`: Intermediate dataset saved before filtering for hit trials and removing NAs, from `3_analysis_specific_filtering.py`.
   - `df_HNL1_hits_final_cleaned_for_LME.csv`: Final cleaned dataset ready for LME modeling from `3_analysis_specific_filtering.py`.
   - `omnibus_full_model_summary.txt`: Model summaries from raw factor models (`4a_raw-factor_models.py`).
